@@ -1,7 +1,7 @@
 # Extraction functions ----------------------------------------------------
 
 ####
-# Copied and adapted from package "statscheck"
+# Based on the function "getPDF()" in the package "statscheck" (https://github.com/MicheleNuijten/statcheck)
 ####
 
 # Inner function to read pdf:
@@ -10,10 +10,9 @@ getPDFs <- function(x)
   txtfiles <- character(length(x))
   for (i in 1:length(x))
   {
-    system(paste('pdftotext -q -enc "ASCII7" "',x[i],'"',sep=""))
+    system(paste('pdftotext -q -enc "UTF-8" "',x[i],'"',sep=""))
     if (file.exists(gsub("\\.pdf","\\.txt",x[i])))
     {
-      #txtfiles[i] <- paste(scan(gsub(".pdf",".txt",x[i]),what="character",sep=" "),collapse=" ")
       fileName <- gsub("\\.pdf","\\.txt",x[i])
       txtfiles[i] <- readChar(fileName, file.info(fileName)$size)
     } else
@@ -22,11 +21,11 @@ getPDFs <- function(x)
       txtfiles[i] <- ""
     }
   }
-  return(txtfiles)
+  return(enc2utf8(txtfiles))
 }
 
 ####
-# Copied and adapted from package "statchek" to return PDFdirectory
+# Based on the function "checkPDFdir()" from package "statchek" (https://github.com/MicheleNuijten/statcheck)
 ####
 
 # Function to check directory of PDFs:
@@ -48,6 +47,8 @@ returnPDFdir <- function(dir, ...){
 
 
 loadPatterns <- function(pubs=TRUE,stat=TRUE,info=TRUE){
+  #Load 
+  
   # Regexpr patterns to find common sections of articles
   #           small   capital     alt.
   # alpha    U+03B1
