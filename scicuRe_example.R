@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # [sciCure](http://fredhasselman.github.io/scicuRe/)
 # ========
 # ### A Toolbox for Curating Scientific Knowledge Extracted from Scientific Publications
@@ -49,6 +50,56 @@
 # ```
 # if(all(file.exists(Sys.which("pdftotext")))) print("YES!") else print("NO!")
 # ```   
+=======
+# scicuRe - example extraction from PDFs in a folder
+#
+# A Toolbox for Curating Scientific Knowledge Extracted from Scientific Publications
+#
+# Very BETA version - Fred Hasselman
+#
+# All the functions that are required are available in "SCstats_source.R", use the code below to source it directly from GitHub
+# (the source function was found here: http://tonybreyal.wordpress.com/2011/11/24/source_https-sourcing-an-r-script-from-github/)
+# It requires you to install and load the `RCurl` package
+source_https <- function(url, ...) {
+  # load the package 
+  require(RCurl)
+
+  # parse and evaluate each .R script
+  sapply(c(url, ...), function(u) {
+    eval(parse(text = getURL(u, followlocation = TRUE, cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl"))), envir = .GlobalEnv)
+  })
+}
+
+# Source the SCstats_source.R toolbox!
+source_https("https://raw.github.com/FredHasselman/SC-stats/master/SCstats_source.R")
+
+# SEARCH STRATEGY ---------------------------------------------------------
+#
+# Some of the code is inspired by the "statcheck" package.
+#
+# The "statcheck" search strategy (i.e., extract all stats) is not optimal for the goal of curation:
+# - Need stats labelled for each experiment in a multi-experiment study
+# - Need measures of effect size
+# - Need aggregate stats, i.e. based on post-hoc power and more
+# - Need information to decide if proper analysis was used on stats ("statcheck" does provide some interesting tests!)
+#
+# Therefore: 
+# - Search is implemented to be driven by the hierarchical structure of an empirical report
+# - Structure is: Header (e.g., Experiment 1) -> Section (e.g., Results) -> [Table 1. ->] *STAT OF INTEREST* <- Page number [<- Appendix]
+# - Extract as much information as possible!
+
+# The "statcheck" package is available here: https://github.com/MicheleNuijten/statcheck
+# Download, unzip and install, e.g. by running:
+# install.packages("~/Downloads/statcheck-master/", repos = NULL, type="source")
+
+# The authors of "statcheck" note:
+#> The "pdftotext" program (http://www.foolabs.com/xpdf/download.html) is used to convert PDF files to plain text files. 
+#> This must be installed and PATH variables must be properly set so that this program can be used from command line.
+
+# For the code in this package to execute correctly "pdftotxt" needs to be available on your system as well.
+# Check it now:
+if(all(file.exists(Sys.which("pdftotext")))) print("YES!") else print("NO!")
+>>>>>>> 79cc65ece756497dd2471ae286ce6d61892216af
 
 # PREPARE -----------------------------------------------------------------
 require(plyr)
