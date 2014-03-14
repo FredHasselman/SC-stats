@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # [sciCure](http://fredhasselman.github.io/scicuRe/)
 # ========
 # ### A Toolbox for Curating Scientific Knowledge Extracted from Scientific Publications
@@ -50,14 +49,6 @@
 # ```
 # if(all(file.exists(Sys.which("pdftotext")))) print("YES!") else print("NO!")
 # ```   
-=======
-# scicuRe
-#
-# A Toolbox for Curating Scientific Knowledge Extracted from Scientific Publications
-#
-# Very BETA version - Fred Hasselman
-
->>>>>>> 79cc65ece756497dd2471ae286ce6d61892216af
 # Extraction functions ----------------------------------------------------
 
 getPDFs <- function(x)
