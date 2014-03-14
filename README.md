@@ -27,23 +27,23 @@ source_https("https://raw.github.com/FredHasselman/SC-stats/master/scicuRe_sourc
  - Need stats labelled for each experiment in a multi-experiment study
  - Need measures of effect size
  - Need aggregate stats, i.e. based on post-hoc power and more
- - Need information to decide if proper analysis was used on stats (`statcheck` provides some interesting tests!)
-
-Therefore:    
+ - Need information to decide if proper analysis was used on stats ([`statcheck`](https://github.com/MicheleNuijten/statcheck) provides some interesting tests!)
+    
+*Therefore:*    
  - Search is implemented to be driven by the hierarchical structure of an empirical report
  - Structure is: Header (e.g., Experiment 1) -> Section (e.g., Results) -> [Table 1. ->] *STAT OF INTEREST* <- Page number [<- Appendix]
  - Extract as much information as possible!
     
-The `statcheck` package bij M. Nuijten is available [here](https://github.com/MicheleNuijten/statcheck)
+The `statcheck` package bij M. Nuijten is available [here](https://github.com/MicheleNuijten/statcheck)   
 Download, unzip and install, e.g. by running:    
 ```
 install.packages("~/Downloads/statcheck-master/", repos = NULL, type="source")
 ```   
 
 The authors of `statcheck` note:   
-> The "pdftotext" program (http://www.foolabs.com/xpdf/download.html) is used to convert PDF files to plain text files. This must be installed and PATH variables must be properly set so that this program can be used from command line.
+> The `pdftotext` program (http://www.foolabs.com/xpdf/download.html) is used to convert PDF files to plain text files. This must be installed and PATH variables must be properly set so that this program can be used from command line.
    
-For the code in this package to execute correctly "pdftotxt" needs to be available on your system as well.
+For the code in this package to execute correctly `pdftotxt` and `pdfinfo` need to be available on your system as well.   
 Check it now:
 ```
 if(all(file.exists(Sys.which("pdftotext")))) print("YES!") else print("NO!")
