@@ -1,8 +1,9 @@
 sciCure
 ========
 ### A Toolbox for Curating Scientific Knowledge Extracted from Scientific Publications
+#### Tool development for the Curate Science website
 
-**Very BETA version - Fred Hasselman**
+*Very BETA version - [Fred Hasselman](http://fredhasselman.com)*
 
 All the functions that are required are available in `scicuRe_source.R`, a package will follow soon. 
 Use the code below to source it directly from GitHub (the source function was found [here](http://tonybreyal.wordpress.com/2011/11/24/source_https-sourcing-an-r-script-from-github/)). It requires you to install and load the `RCurl` package
