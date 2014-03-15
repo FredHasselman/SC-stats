@@ -49,6 +49,75 @@
 # ```
 # if(all(file.exists(Sys.which("pdftotext")))) print("YES!") else print("NO!")
 # ```   
+
+# META functions ----------------------------------------------------------
+
+structureIT <- function(fnames,IT){
+  # Load predefined search patterns
+  structfind <- loadPatterns()
+  
+  # Build a skeleton for each article ---------------------------------------
+  
+  # 1. Get location of article structure indices
+  element         <- c("header","section","table","figure")
+  skeleton        <- ldply(seq(along=element), function(e) cbind(melt(gregexpr(structfind[["skeletonPatterns"]][[element[e]]],IT,perl=T,ignore.case=T)),name="",element=element[e]))
+  names(skeleton) <- c("location","pdf.id","name","element")
+  # 2. Find header info
+  skeleton$header <- NA
+  skeleton$header[skeleton$location!=-1] <- unlist(llply(seq(along=element), function(e) matchIT(structfind[["skeletonPatterns"]][[element[e]]],IT,ic=T,cln=F)))
+  # 3. Find/infer and add pagenumbers to the skeleton
+  pagenumbers     <- ldply(seq(along=IT), function(f){getPageSeq(structfind[["skeletonPatterns"]][["page"]],fnames[[f]],IT[[f]],f)})
+  skeleton        <- rbind(skeleton, pagenumbers)
+  # 4. Add names, tidy up, sort results within each article
+  skeleton$name   <- factor(skeleton$pdf.id,levels=seq(along=fnames),labels=names(IT))
+  skeleton        <- subset(skeleton, location!=-1)
+  skeleton        <- skeleton[ order(skeleton$pdf.id,skeleton$location), ]
+  return(skeleton)
+}
+
+IT<-metaFound[[6]]
+p=1
+placeIT <- function(IT,skeleton){
+  out <- vector("list")
+  
+  cnt=0
+  for(p in seq(along=IT)){
+    if(length(IT[[p]])>0){
+    tmp1 <- melt(IT[[p]])
+    names(tmp1)[1]<- "header"
+    tmp1$location <- attr(IT[[p]],"location")
+    tmp1$element  <- "metastat"
+    skel.tmp      <- rbind(subset(skeleton, pdf.id==p, select=c(location,element,header)))
+    tmp2          <- rbind(skel.tmp,tmp1)
+    tmp2$location <- as.numeric(as.vector(tmp2$location))
+    tmp2          <- tmp2[ do.call(order,tmp2), ]
+    metaID        <- which(tmp2$element=="metastat")
+    
+    for(i in metaID){
+      idAbove   <- which(tmp2$location<tmp2$location[i])
+      idHeader  <- idAbove[which(tmp2$element[idAbove]=="header")]
+      if(length(idHeader) > 0){idHeader<-max(idHeader)} else {idHeader<-nrow(tmp2)+1}
+      idSection <- idAbove[which(tmp2$element[idAbove]=="section")]
+      if(length(idSection) > 0){idSection<-max(idSection)} else {idSection<-nrow(tmp2)+1}
+      idTable   <- idAbove[which(tmp2$element[idAbove]=="table")]
+      if(length(idTable) > 0){idTable<-max(idTable)} else {idTable<-nrow(tmp2)+1}
+      idBelow  <- which(tmp2$location>tmp2$location[i])
+      idPage   <- idBelow[which(tmp2$element[idBelow]=="page")]
+      if(length(idPage) > 0){idPage<-min(idPage)} else {idPage<-nrow(tmp2)+1}
+
+      tmp <- rbind(tmp2,cbind(location=-1,element="none",header="NOT FOUND"))
+      cnt=cnt+1
+      out[[cnt]] <- as.data.frame(cbind(pdf.id=p,location=tmp$location[i],stat=tmp$header[i],page=tmp$header[idPage],section=tmp$header[idSection],table=tmp$header[idTable],header=tmp$header[idHeader],name=names(IT)[p]),row.names=paste(p,cnt,sep="."),stringsAsFactors = FALSE)
+      rm(idAbove,idHeader,idSection,idTable,idBelow,idPage,tmp)
+    }
+    } else {
+      cnt=cnt+1
+      out[[cnt]] <- as.data.frame(cbind(pdf.id=p,location=-1,stat=paste(i,sep=""),page="",section="",table="",header="",name=names(IT)[p]),row.names=paste(p,cnt,sep="."),stringsAsFactors = FALSE)
+    }
+  }
+  return(ldply(out))
+}
+
 # Extraction functions ----------------------------------------------------
 
 getPDFs <- function(x)
@@ -255,7 +324,7 @@ cleanIT <- function(IT){# Clean up the output from matchIT()
     
     # Clean the stat symbols etc.
     IT[i] <- gsub("\\b[χΧx][[:blank:]]*[2²]?[[:blank:]]*[s]?[[:blank:]]*","χ²", IT[i], perl = TRUE)
-    IT[i] <- gsub("\\b[ηΗgZ][[:blank:]]*[2²]?[[:blank:]]*","η²", IT[i], perl = TRUE)
+    IT[i] <- gsub("\\b[ηΗgZ][[:blank:]]*[2²][[:blank:]]*","η²", IT[i], perl = TRUE)
     IT[i] <- gsub("\\b[ωΩ][[:blank:]]*[2²]?[[:blank:]]*","ω²", IT[i], perl = TRUE)
     IT[i] <- gsub(paste("\\b([cC]ramer","(['`]","[s]\\s*)?)?","([φΦ]|[pP]hi)","[cC]*", sep="[[:blank:]]*"),"\\1φ",IT[i],perl = TRUE)
     IT[i] <- gsub("\\b[fF][[:blank:]]*(?=[(])","F", IT[i], perl = TRUE)
@@ -294,13 +363,15 @@ locIT <- function(str,IT) {# Return matching positions in source using regmatche
   return(m)
 }
 
-matchIT <- function(str,IT, ic=TRUE,cln=TRUE) {# Return matching strings in source using regmatches
+matchIT <- function(str,IT, ic=TRUE,cln=TRUE,loc=TRUE) {# Return matching strings in source using regmatches
+  require(reshape)
   n <- names(IT)
   m <- gregexpr(str,IT,perl=TRUE,ignore.case=ic) 
   t <- character(length(IT))
   for(i in seq(along=IT)){
     tmp <- regmatches(IT[[i]],m[i])
     ifelse(cln,{t[i] <- cleanIT(tmp[[1]])},{t[i] <- list(tmp[[1]])})
+    if(loc==TRUE){attr(t[[i]],"location") <- as.vector(melt(m[[i]])$value)}
   }
   names(t) <- n
   return(t)
