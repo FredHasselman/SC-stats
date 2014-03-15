@@ -61,8 +61,8 @@ skeleton        <- structureIT(fnames,txtfiles)
 #
 # These are all combinations of patterns defined in loadPatterns()
 # Let's call them meta-patterns:
-meta      <- vector("list",length=6)
-metafound <- vector("list",length=6)
+meta      <- vector("list",length=4)
+metafound <- vector("list",length=4)
 
 # Strategy:
 # 3a. Create meta patterns
@@ -76,7 +76,7 @@ metafound <- vector("list",length=6)
 # Load predefined regex search patterns
 structfind <- loadPatterns()
 
-# Here are 6 patterns commonly encountered in the behavioural sciences:
+# Here are 4 patterns commonly encountered in the behavioural sciences:
 
 meta[[1]] <- paste("(",structfind[["statsPatterns"]][["F"]],"[[:blank:]\\,\\;]*)(",structfind[["evidencePatterns"]][["p"]],"[[:blank:]\\,\\;]*)*([[:blank:]\\,\\;]*",structfind[["effectPatterns"]][["eta2"]],")*",sep="")
 # Meta 1 will return:

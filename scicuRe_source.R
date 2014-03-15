@@ -81,36 +81,47 @@ placeIT <- function(IT,skeleton){
   cnt=0
   for(p in seq(along=IT)){
     if(length(IT[[p]])>0){
-    tmp1 <- melt(IT[[p]])
-    names(tmp1)[1]<- "header"
-    tmp1$location <- attr(IT[[p]],"location")
-    tmp1$element  <- "metastat"
-    skel.tmp      <- rbind(subset(skeleton, pdf.id==p, select=c(location,element,header)))
-    tmp2          <- rbind(skel.tmp,tmp1)
-    tmp2$location <- as.numeric(as.vector(tmp2$location))
-    tmp2          <- tmp2[ do.call(order,tmp2), ]
-    metaID        <- which(tmp2$element=="metastat")
-    
-    for(i in metaID){
-      idAbove   <- which(tmp2$location<tmp2$location[i])
-      idHeader  <- idAbove[which(tmp2$element[idAbove]=="header")]
-      if(length(idHeader) > 0){idHeader<-max(idHeader)} else {idHeader<-nrow(tmp2)+1}
-      idSection <- idAbove[which(tmp2$element[idAbove]=="section")]
-      if(length(idSection) > 0){idSection<-max(idSection)} else {idSection<-nrow(tmp2)+1}
-      idTable   <- idAbove[which(tmp2$element[idAbove]=="table")]
-      if(length(idTable) > 0){idTable<-max(idTable)} else {idTable<-nrow(tmp2)+1}
-      idBelow  <- which(tmp2$location>tmp2$location[i])
-      idPage   <- idBelow[which(tmp2$element[idBelow]=="page")]
-      if(length(idPage) > 0){idPage<-min(idPage)} else {idPage<-nrow(tmp2)+1}
-
-      tmp <- rbind(tmp2,cbind(location=-1,element="none",header="NOT FOUND"))
-      cnt=cnt+1
-      out[[cnt]] <- as.data.frame(cbind(pdf.id=p,location=tmp$location[i],stat=tmp$header[i],page=tmp$header[idPage],section=tmp$header[idSection],table=tmp$header[idTable],header=tmp$header[idHeader],name=names(IT)[p]),row.names=paste(p,cnt,sep="."),stringsAsFactors = FALSE)
-      rm(idAbove,idHeader,idSection,idTable,idBelow,idPage,tmp)
-    }
+      tmp1 <- melt(IT[[p]])
+      names(tmp1)[1]<- "header"
+      tmp1$location <- attr(IT[[p]],"location")
+      tmp1$element  <- "metastat"
+      skel.tmp      <- rbind(subset(skeleton, pdf.id==p, select=c(location,element,header)))
+      tmp2          <- rbind(skel.tmp,tmp1)
+      tmp2$location <- as.numeric(as.vector(tmp2$location))
+      tmp2          <- tmp2[ do.call(order,tmp2), ]
+      metaID        <- which(tmp2$element=="metastat")
+      
+      for(i in metaID){
+        idAbove   <- which(tmp2$location<tmp2$location[i])
+        idHeader  <- idAbove[which(tmp2$element[idAbove]=="header")]
+        # Prefer Headers with numbers
+        if(length(idHeader) > 0){
+          if(grepl("\\d+\\w*",tmp2$header[max(idHeader)])){
+            idHeader<-max(idHeader)
+          } else {
+            if(any(grepl("\\d+\\w*",tmp2$header[idHeader]))){
+              idHeader<-max(idHeader[grepl("\\d+\\w*",tmp2$header[idHeader])])
+            } else {
+              idHeader<-max(idHeader)
+            }  
+          }
+        } else {idHeader<-nrow(tmp2)+1}
+        idSection <- idAbove[which(tmp2$element[idAbove]=="section")]
+        if(length(idSection) > 0){idSection<-max(idSection)} else {idSection<-nrow(tmp2)+1}
+        idTable   <- idAbove[which(tmp2$element[idAbove]=="table")]
+        if(length(idTable) > 0){idTable<-max(idTable)} else {idTable<-nrow(tmp2)+1}
+        idBelow  <- which(tmp2$location>tmp2$location[i])
+        idPage   <- idBelow[which(tmp2$element[idBelow]=="page")]
+        if(length(idPage) > 0){idPage<-min(idPage)} else {idPage<-nrow(tmp2)+1}
+        
+        tmp <- rbind(tmp2,cbind(location=-1,element="none",header="NOT FOUND"))
+        cnt=cnt+1
+        out[[cnt]] <- as.data.frame(cbind(pdf.id=p,location=tmp$location[i],stat=tmp$header[i],page=tmp$header[idPage],section=tmp$header[idSection],header=tmp$header[idHeader],table=tmp$header[idTable],name=names(IT)[p]),row.names=paste(p,cnt,sep="."),stringsAsFactors = FALSE)
+        rm(idAbove,idHeader,idSection,idTable,idBelow,idPage,tmp)
+      }
     } else {
       cnt=cnt+1
-      out[[cnt]] <- as.data.frame(cbind(pdf.id=p,location=-1,stat=paste(i,sep=""),page="",section="",table="",header="",name=names(IT)[p]),row.names=paste(p,cnt,sep="."),stringsAsFactors = FALSE)
+      out[[cnt]] <- as.data.frame(cbind(pdf.id=p,location=-1,stat=paste(p,sep=""),page="",section="",header="",table="",name=names(IT)[p]),row.names=paste(p,cnt,sep="."),stringsAsFactors = FALSE)
     }
   }
   return(ldply(out))
@@ -247,7 +258,7 @@ loadPatterns <- function(skelet=T,stats=T,evid=T,eff=T,desc=T,bib=T){
     hv = paste("\\b([hH]edges","(['`]","[s])?)?","[gG]",eq_pat,real_pat, sep="[[:blank:]]*"),
     cd = paste("\\b([cC]ohen","(['`]","[s])?)?","[δΔd]",eq_pat,real_pat, sep="[[:blank:]]*"),
     cf = paste("\\b([cC]ohen","(['`]","[s])?)?","[fF]","[2²]?",eq_pat,real_pat, sep="[[:blank:]]*")
-    )
+  )
   
   # Regexpr patterns to find information about analyses
   descriptivePatterns <- list(
@@ -268,7 +279,7 @@ loadPatterns <- function(skelet=T,stats=T,evid=T,eff=T,desc=T,bib=T){
     dependend="[[:blank:]]*[(]?[[:blank:]]*((((In)*Dependent|Paired|Matched)\\s*(Sample(s)*|Group(s)*|Pairs|Observation(s)*|Measurement(s)*|(\\w*[-]?test(s)*))+)|(Repeated\\s*Measure(s|ment(s)*)*)|((within|between)\\s*(subject(s)*|participant(s)*|factor(s)*|design|predictor(s)*|covariate(s)*|level(s)*|effect(s)*)))[[:blank:]]*[)]?[[:blank:]]*",
     # Randomisation
     random="[[:blank:]]*[(]?[[:blank:]]*((Assign(ed|ment)*|Select(ed|ion)*)?(At)*Random(ly)*\\s*(Assign(ed|ment)*|Select(ed|ion)*)?)[[:blank:]]*[)]?[[:blank:]]*"
-    )
+  )
   
   # Regexpr patterns to find reference list and citation info
   bibPatterns <- list(
@@ -290,8 +301,8 @@ loadPatterns <- function(skelet=T,stats=T,evid=T,eff=T,desc=T,bib=T){
               descriptivePatterns=descriptivePatterns,
               bibPatterns=bibPatterns,
               c(sign_pat=sign_pat,eq_pat=eq_pat,ns_pat=ns_pat,int_pat=int_pat,real_pat=real_pat)
-              )[c(skelet,stats,evid,eff,desc,bib,TRUE)]
-         )
+  )[c(skelet,stats,evid,eff,desc,bib,TRUE)]
+  )
 }
 
 splitseq <- function(seq){# Split a vector of numbers into sequences of lag = 1 (if any)
