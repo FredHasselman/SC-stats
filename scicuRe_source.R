@@ -75,8 +75,6 @@ structureIT <- function(fnames,IT){
   return(skeleton)
 }
 
-IT<-metaFound[[6]]
-p=1
 placeIT <- function(IT,skeleton){
   out <- vector("list")
   

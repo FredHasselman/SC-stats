@@ -28,7 +28,8 @@ source_https("https://raw.github.com/FredHasselman/scicuRe/master/scicuRe_source
 # 2. Look for common header and section indicators in those files
 # 3. Search for specific references to statistical tests and sample info by combining pre-defined search patterns
 # 4. Locate the statistics relative to the information found in 2
-# 5. Run tests, calculate ESCI and more
+# 5. Try to find additional info about the test statitistic
+# 5. [to do] Run tests, calculate ESCI and more
 
 
 # PREPARE -----------------------------------------------------------------
@@ -109,20 +110,6 @@ meta[[4]] <- paste("(",structfind[["statsPatterns"]][["chi2"]],"[[:blank:]\\,\\;
 # χ² = real,
 #tidyIT(matchIT(meta[[4]],txtfiles))
 
-meta[[5]] <- wordXsYo(structfind[["descriptivePatterns"]][["M"]],structfind[["descriptivePatterns"]][["sde"]])
-# Meta 5 will return:
-# means, medians and SD or SE
-#tidyIT(matchIT(meta[[5]],txtfiles))
-
-# Meta 6 will return:
-# References to sample size and subjects such as "33 female participants"
-tags1 <- tagIT(gregexpr(wordXsYro(structfind[["descriptivePatterns"]][["Human1"]],structfind[["descriptivePatterns"]][["Human2"]]),txtfiles,perl=TRUE),txtfiles)
-tags2 <- tagIT(gregexpr(wordXsYr(tags1,structfind[[7]][["int_pat"]]),txtfiles,perl=TRUE),txtfiles)
-tags3 <- tagIT(gregexpr(structfind[["descriptivePatterns"]][["N"]],txtfiles,perl=TRUE),txtfiles)
-tags  <- unlist(c(tags2,tags3))
-meta[[6]] <- wordXX(tags)
-#tidyIT(matchIT(meta[[6]],txtfiles))
-
 
 # 3b. COLLECT --------------------------------------------------------------
 # Now get the meta text and locations (will be stored in attribute "location")
@@ -142,6 +129,22 @@ data        <- subset(data, location!=-1)
 rm(extracted)
 write.csv(data,file="autostats.csv")
   
+
+# 
+# meta[[5]] <- wordXsYo(structfind[["descriptivePatterns"]][["M"]],structfind[["descriptivePatterns"]][["sde"]])
+# # Meta 5 will return:
+# # means, medians and SD or SE
+# #tidyIT(matchIT(meta[[5]],txtfiles))
+# 
+# # Meta 6 will return:
+# # References to sample size and subjects such as "33 female participants"
+# tags1 <- tagIT(gregexpr(wordXsYro(structfind[["descriptivePatterns"]][["Human1"]],structfind[["descriptivePatterns"]][["Human2"]]),txtfiles,perl=TRUE),txtfiles)
+# tags2 <- tagIT(gregexpr(wordXsYr(tags1,structfind[[7]][["int_pat"]]),txtfiles,perl=TRUE),txtfiles)
+# tags3 <- tagIT(gregexpr(structfind[["descriptivePatterns"]][["N"]],txtfiles,perl=TRUE),txtfiles)
+# tags  <- unlist(c(tags2,tags3))
+# meta[[6]] <- wordXX(tags)
+# #tidyIT(matchIT(meta[[6]],txtfiles))
+
 
   # # Article level stats -----------------------------------------------------
   # alpha     <- .05
