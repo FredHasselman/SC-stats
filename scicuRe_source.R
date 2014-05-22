@@ -1611,7 +1611,6 @@ php.t = function(P, df, prediction="not equal", alpha=.05) {# 'p-value based' po
 
 
 posthocPOWer <- function(stat.type,inference,stat.df){
-  
   # Check input arguments
   stat.type<-tolower(stat.type)
   if(stat.type%in%tolower(c("X^2","X2","chi.sq"))){stat.type<-"chisq"}
@@ -1627,12 +1626,12 @@ posthocPOWer <- function(stat.type,inference,stat.df){
     }
   }
   
-  if(length(prediction)>1){
+  if(length(inference$prediction)>1){
     cat("\nArgument prediction > 1.\nAssuming undirected test...\n")
-    prediction <- "not equal"
+    inference$prediction <- "not equal"
   } else {
-    prediction <- tolower(prediction)
-    if(!any(c("not equal","greater","less")%in%prediction)){
+    inference$prediction <- tolower(inference$prediction)
+    if(!any(c("not equal","greater","less")%in%inference$prediction)){
       stop("Unknown prediction, choose from: not equal, greater, less")
     }
   }
@@ -1650,7 +1649,7 @@ posthocPOWer <- function(stat.type,inference,stat.df){
   }
    if(stat.type=="f"){
       if(length(stat.df)==2){
-        posthocPOW  <- (1 - pf(abs(inference$stat.crit), stat.df[1], stat.df[2]))
+        posthocPOW  <- (1-pf(abs(inference$stat.crit), stat.df[1], stat.df[2]))
       } else {
         stop("The F distribution requires 2 degrees of freedom.")
       }
@@ -1678,12 +1677,12 @@ convertES <- function(stat.type,inference,stat.df){
     }
   }
   
-  if(length(prediction)>1){
+  if(length(inference$prediction)>1){
     cat("\nArgument prediction > 1.\nAssuming undirected test...\n")
-    prediction <- "not equal"
+    inference$prediction <- "not equal"
   } else {
-    prediction <- tolower(prediction)
-    if(!any(c("not equal","greater","less")%in%prediction)){
+    inference$prediction <- tolower(inference$prediction)
+    if(!any(c("not equal","greater","less")%in%inference$prediction)){
       stop("Unknown prediction, choose from: not equal, greater, less")
     }
   }
@@ -1787,7 +1786,7 @@ decideNP <- function(stat.type=c("z","t","f","chisq"), stat.ncp, stat.df, stat.N
         CI     <- conf.limits.ncf(F.value = stat.ncp, conf.level = NULL, alpha.lower=0, alpha.upper=alpha[1], df.1 = stat.df[1], df.2 = stat.df[2])
         ci.type <- "asymmetric"
       }
-      if(length(CI$Lower.Limit)==0){CI$Lower.Limit <- 0}
+      if(length(CI$Lower.Limit)==0){CI$Lower.Limit <- NA}
       stat.ncp.ciL <- CI$Lower.Limit
       stat.ncp.ciU <- CI$Upper.Limit
       prediction <- "greater"
@@ -1805,7 +1804,7 @@ decideNP <- function(stat.type=c("z","t","f","chisq"), stat.ncp, stat.df, stat.N
       CI     <- conf.limits.nc.chisq(Chi.Square=stat.ncp, conf.level=NULL, alpha.lower=0, alpha.upper=alpha[1], df=stat.df[1])
       ci.type <- "asymmetric"
     }
-    if(length(CI$Lower.Limit)==0){CI$Lower.Limit <- 0}
+    if(length(CI$Lower.Limit)==0){CI$Lower.Limit <- NA}
     stat.ncp.ciL  <- CI$Lower.Limit
     stat.ncp.ciU  <- CI$Upper.Limit
     prediction <- "greater"
