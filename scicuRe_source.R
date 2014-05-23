@@ -1,4 +1,4 @@
-# [sciCure](http://fredhasselman.github.io/scicuRe/)
+# sciCure (http://fredhasselman.github.io/scicuRe/)
 # ========
 # ### A Toolbox for Curating Scientific Knowledge Extracted from Scientific Publications
 # #### Tool development for the Curate Science website
