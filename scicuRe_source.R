@@ -1660,7 +1660,7 @@ posthocPOWer <- function(stat.type,inference,stat.df){
   return(data.frame(posthocPOW=posthocPOW))
 }
 
-convertES <- function(stat.type,inference,stat.df){
+convertES <- function(stat.type,inference,stat.N,stat.df){
   
   # Check input arguments
   stat.type<-tolower(stat.type)
@@ -1695,7 +1695,7 @@ convertES <- function(stat.type,inference,stat.df){
     ES.d     <- t_d(inference$stat.ncp, stat.df[1])
     ES.d.ciL <- t_d(inference$stat.ncp.ciL, stat.df[1])
     ES.d.ciU <- t_d(inference$stat.ncp.ciU, stat.df[1])
-    ES.r     <- t_r(inference$stat.ncp.stat.ncp, stat.df[1])
+    ES.r     <- t_r(inference$stat.ncp, stat.df[1])
     ES.r.ciL <- t_r(inference$stat.ncp.ciL, stat.df[1])
     ES.r.ciU <- t_r(inference$stat.ncp.ciU, stat.df[1])
   }
@@ -1709,12 +1709,12 @@ convertES <- function(stat.type,inference,stat.df){
   }
   
   if(stat.type=="chisq"){
-    ES.d     <- X_d(inference$stat.ncp, stat.df[1])
-    ES.d.ciL <- X_d(inference$stat.ncp.ciL, stat.df[1])
-    ES.d.ciU <- X_d(inference$stat.ncp.ciU, stat.df[1])
-    ES.r     <- X_r(inference$stat.ncp.stat.ncp, stat.df[1])
-    ES.r.ciL <- X_r(inference$stat.ncp.ciL, stat.df[1])
-    ES.r.ciU <- X_r(inference$stat.ncp.ciU, stat.df[1])
+    ES.d     <- X_d(inference$stat.ncp, stat.N, stat.df[1])
+    ES.d.ciL <- X_d(inference$stat.ncp.ciL,stat.N, stat.df[1])
+    ES.d.ciU <- X_d(inference$stat.ncp.ciU,stat.N, stat.df[1])
+    ES.r     <- X_r(inference$stat.ncp, stat.N, stat.df[1])
+    ES.r.ciL <- X_r(inference$stat.ncp.ciL,stat.N, stat.df[1])
+    ES.r.ciU <- X_r(inference$stat.ncp.ciU,stat.N, stat.df[1])
   }
   tmp<-list(ES.d,ES.d.ciL,ES.d.ciU,ES.r,ES.r.ciL,ES.r.ciU)
   tmp[sapply(tmp,length)==0]<-NA
@@ -1784,6 +1784,7 @@ decideNP <- function(stat.type=c("z","t","f","chisq"), stat.ncp, stat.df, stat.N
         ci.type <- "symmetric"
       } else {
         CI     <- conf.limits.ncf(F.value = stat.ncp, conf.level = NULL, alpha.lower=0, alpha.upper=alpha[1], df.1 = stat.df[1], df.2 = stat.df[2])
+        CI$Lower.Limit <- stat.ncp
         ci.type <- "asymmetric"
       }
       if(length(CI$Lower.Limit)==0){CI$Lower.Limit <- NA}
@@ -1802,6 +1803,7 @@ decideNP <- function(stat.type=c("z","t","f","chisq"), stat.ncp, stat.df, stat.N
       ci.type <- "symmetric"
     } else {
       CI     <- conf.limits.nc.chisq(Chi.Square=stat.ncp, conf.level=NULL, alpha.lower=0, alpha.upper=alpha[1], df=stat.df[1])
+      CI$Lower.Limit <- stat.ncp
       ci.type <- "asymmetric"
     }
     if(length(CI$Lower.Limit)==0){CI$Lower.Limit <- NA}
