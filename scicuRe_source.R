@@ -1723,7 +1723,7 @@ convertES <- function(stat.type,inference,stat.N,stat.df){
 
   return(ESconvert)
 }
-
+ 
 decideNP <- function(stat.type=c("z","t","f","chisq"), stat.ncp, stat.df, stat.N, alpha=0.05, CL=0.95, prediction="not equal"){
   
   # Check input arguments
