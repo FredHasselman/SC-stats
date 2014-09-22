@@ -1564,9 +1564,9 @@ php.t = function(P, df, prediction="not equal", alpha=.05) {# 'p-value based' po
 }
 
 
-posthocPOWer <- function(stat.type,inference,stat.df){
+posthocPOWer <- function(inference,stat.df){
   # Check input arguments
-  stat.type<-tolower(stat.type)
+  stat.type <- tolower(inference$stat.type)
   if(stat.type%in%tolower(c("X^2","X2","chi.sq"))){stat.type<-"chisq"}
   
   if(length(stat.type)!=1){
@@ -1581,7 +1581,7 @@ posthocPOWer <- function(stat.type,inference,stat.df){
   }
   
   if(length(inference$prediction)>1){
-    cat("\nArgument prediction > 1.\nAssuming undirected test...\n")
+    message("\nElements in argument 'prediction' > 1.\nAssuming undirected test...\n")
     inference$prediction <- "not equal"
   } else {
     inference$prediction <- tolower(inference$prediction)
@@ -1595,29 +1595,29 @@ posthocPOWer <- function(stat.type,inference,stat.df){
   }
   
   if(stat.type=="t"){
-  posthocPOW <- if(inference$prediction=="not equal"){
-        (1 - pt(abs(inference$stat.crit), stat.df[1],ncp=inference$stat.ncp) + pt(-1*abs(inference$stat.crit), stat.df[1],ncp=inference$stat.ncp))
-      } else {
-        (1 - pt(abs(inference$stat.crit), stat.df[1]))
-      }
+    posthocPOW <- if(inference$prediction=="not equal"){
+      (1 - pt(abs(inference$stat.crit), stat.df[1],ncp=inference$stat.ncp) + pt(-1*abs(inference$stat.crit), stat.df[1],ncp=inference$stat.ncp))
+    } else {
+      (1 - pt(abs(inference$stat.crit), stat.df[1]))
+    }
   }
-   if(stat.type=="f"){
-      if(length(stat.df)==2){
-        posthocPOW  <- (1-pf(abs(inference$stat.crit), stat.df[1], stat.df[2]))
-      } else {
-        stop("The F distribution requires 2 degrees of freedom.")
-      }
-   }
-     if(stat.type=="chisq"){
-        posthocPOW  <- (1 - pchisq(abs(inference$stat.crit), stat.df[1])) 
-      }
+  if(stat.type=="f"){
+    if(length(stat.df)==2){
+      posthocPOW  <- (1-pf(abs(inference$stat.crit), stat.df[1], stat.df[2]))
+    } else {
+      stop("The F distribution requires 2 degrees of freedom.")
+    }
+  }
+  if(stat.type=="chisq"){
+    posthocPOW  <- (1 - pchisq(abs(inference$stat.crit), stat.df[1])) 
+  }
   return(data.frame(posthocPOW=posthocPOW))
 }
 
-convertES <- function(stat.type,inference,stat.N,stat.df){
+convertES <- function(inference,stat.N,stat.df, keepSign=TRUE){
   
   # Check input arguments
-  stat.type<-tolower(stat.type)
+  stat.type <- tolower(inference$stat.type)
   if(stat.type%in%tolower(c("X^2","X2","chi.sq"))){stat.type<-"chisq"}
   
   if(length(stat.type)!=1){
@@ -1632,7 +1632,7 @@ convertES <- function(stat.type,inference,stat.N,stat.df){
   }
   
   if(length(inference$prediction)>1){
-    cat("\nArgument prediction > 1.\nAssuming undirected test...\n")
+    message("\nElements in argument 'prediction' > 1.\nAssuming undirected test...\n")
     inference$prediction <- "not equal"
   } else {
     inference$prediction <- tolower(inference$prediction)
@@ -1673,23 +1673,47 @@ convertES <- function(stat.type,inference,stat.N,stat.df){
   tmp<-list(ES.d,ES.d.ciL,ES.d.ciU,ES.r,ES.r.ciL,ES.r.ciU)
   tmp[sapply(tmp,length)==0]<-NA
   ESconvert<-as.data.frame(t(unlist(tmp)))
+  if(keepSign){
+    ESconvert <- ESconvert * as.numeric(c(1,1,1,sign(inference[,2:4])))
+  } else {
+    if(all(inference[,2:4]<=0)){
+      ESconvert <- abs(ESconvert)
+      message("\nkeepSign=FALSE\nCohen's d: All values were negative, removed sign...\n")
+    } else {
+      if((inference[,2:3]<=0)&(inference[,4]>0)){
+        ESconvert     <- ESconvert - as.numeric(-1,-1,1,0,0,0)
+        ESconvert[,3] <- 0
+        message("\nkeepSign=FALSE\nCohen's d: Lower CI and NCP were negative, changed positive Upper CI to 0 and converted to 'right sided' values...\n")
+      }
+      if((inference[,2]<=0)&(inference[,3:4]>0)){
+        ESconvert[,2] <- 0
+        message("\nkeepSign=FALSE\nCohen's d: Upper CI and NCP were positive, changed negative Lower CI to 0...\n")
+      }
+    }
+  }
+  
   colnames(ESconvert) <- list("ES.d","ES.d.ciL","ES.d.ciU","ES.r","ES.r.ciL","ES.r.ciU")
-
+  
   return(ESconvert)
 }
- 
+
 decideNP <- function(stat.type=c("z","t","f","chisq"), stat.ncp, stat.df, stat.N, alpha=0.05, CL=0.95, prediction="not equal"){
   
   # Check input arguments
   stat.type<-tolower(stat.type)
   if(stat.type%in%tolower(c("X^2","X2","chi.sq"))){stat.type<-"chisq"}
+  if(stat.type%in%tolower(c("z","Z","normal","norm"))){
+    stat.type<-"z"
+    cat("\nAssuming Mean = 0 and SD = 1\n")}
+  
   
   if(length(stat.type)!=1){
     stop('\nChoose 1 distribution out of: ',paste(stat.type,collapse="  "))
   } else {
     if(!any(tolower(c("z","t","f","chisq","chi.sq","X^2","X2"))%in%stat.type)){ 
       warning(paste("Unknown test statistic. Choose from: Z, t, F, chisq"),immediate.=T)
-      return(decide <- data.frame(stat.ncp=stat.ncp,
+      return(decide <- data.frame(stat.type="unknown",
+                                  stat.ncp=stat.ncp,
                                   stat.ncp.ciL=NA,
                                   stat.ncp.ciU=NA,
                                   ci.type="unknown",
@@ -1716,12 +1740,32 @@ decideNP <- function(stat.type=c("z","t","f","chisq"), stat.ncp, stat.df, stat.N
   if(stat.type!="f"){
     stat.df <- c(stat.df[1],NA)
   }
-  
   ID    <- NULL
   alpha <- c(alpha,(1-(alpha)))
   
+  
+  if(stat.type=="z"){
+    if(prediction=="not equal"){
+      alpha=c(alpha[1]/2,(1-(alpha[1]/2)))
+    } else {
+      if(CL>(1-2*alpha)){CL <- 1-2*alpha
+                         cat("\nDirectional Z-test... adjusted symmetric Confidence Level accordingly.")}
+    }
+    x.crit <- qnorm(alpha)
+    stat.p <- pnorm(stat.ncp)
+    MoE    <- qnorm(CL)*(1/sqrt(stat.N))
+    stat.ncp.ciL <- stat.ncp - MoE 
+    stat.ncp.ciU <- stat.ncp + MoE 
+    ci.type <- "symmetric"
+  }
+  
   if(stat.type=="t"){
-    if(prediction=="not equal"){alpha=c(alpha[1]/2,(1-(alpha[1]/2)))}
+    if(prediction=="not equal"){alpha=c(alpha[1]/2,(1-(alpha[1]/2)))
+    } else {
+      if(CL>(1-2*alpha)){
+        CL <- 1-2*alpha
+        cat("\nDirectional t-test... adjusted symmetric Confidence Level accordingly.")}
+    }
     x.crit <- qt(alpha,stat.df[1])
     stat.p <- pt(stat.ncp,stat.df[1])
     CI <- conf.limits.nct(ncp=stat.ncp, df=stat.df[1], conf.level=CL)
@@ -1752,7 +1796,7 @@ decideNP <- function(stat.type=c("z","t","f","chisq"), stat.ncp, stat.df, stat.N
   if(stat.type=="chisq"){
     x.crit <- qchisq(alpha,df=stat.df[1])
     stat.p <- pchisq(stat.ncp,df=stat.df[1])
-    if(stat.ncp>(x.crit[2]+1)){
+    if(abs(stat.ncp-(x.crit[2]+1))>1){
       CI     <- conf.limits.nc.chisq(Chi.Square=stat.ncp, conf.level=CL, df=stat.df[1])  
       ci.type <- "symmetric"
     } else {
@@ -1783,7 +1827,9 @@ decideNP <- function(stat.type=c("z","t","f","chisq"), stat.ncp, stat.df, stat.N
   }
   
   ifelse(H0, say<-"Accept H0",say<-"Reject H0")
-  decide <- data.frame(stat.ncp=stat.ncp,
+  
+  decide <- data.frame(stat.type=stat.type,
+                       stat.ncp=stat.ncp,
                        stat.ncp.ciL=stat.ncp.ciL,
                        stat.ncp.ciU=stat.ncp.ciU,
                        ci.type=ci.type,
@@ -1856,7 +1902,7 @@ sev.info <- function(stat.type=c("Z","t","F","chisq"),stat.ncp, stat.df, stat.N 
     if(is.na(infer$stat.ncp.ciL)){infer$stat.ncp.ciL<-0}
     if(is.na(infer$stat.ncp.ciU)){infer$stat.ncp.ciU<-0}
     x     <- seq(infer$stat.ncp.ciL,infer$stat.ncp.ciU,by=.01)
-    x     <- sort(c(x,infer$stat.ncp.ciL,infer$stat.ncp.ciU))
+    x     <- sort(c(x,infer$stat.ncp.ciL,infer$stat.ncp.ciU,0))
     
     #     if(stat.type=="z"){
     #       CI    <- c(Lower.Limit=-1*infer$stat.crit,Upper.Limit=infer$stat.crit)
@@ -1953,7 +1999,7 @@ sev.info <- function(stat.type=c("Z","t","F","chisq"),stat.ncp, stat.df, stat.N 
               curves   = data.frame(stat.x=x,stat.d=x.d,stat.r=x.r,y.ncl=y.ncl,y.ncu=y.ncu,y.ncp=y.ncp,y.POW.post=y.POW.post,y.SEV.obs=y.SEV.obs)))
 }
 
-plotReplication <- function(SEV.ori,SEV.rep, d.axis=c("stat","d","r"), studyname="Study 1", pl.sevlabels=TRUE, pl.sevlabels.comp=FALSE, pl.power=TRUE, pl.crit=TRUE, pl.labels=TRUE, pl.connect=FALSE, pl.ci=FALSE){
+plotReplication <- function(SEV.ori, SEV.rep, d.axis=c("stat","d","r"), studyname="Study 1", pl.sevlabels=TRUE, pl.sevlabels.comp=FALSE, pl.power=TRUE, pl.crit=TRUE, pl.labels=TRUE, pl.connect=FALSE, pl.ci=FALSE){
   require(ggplot2)
   
   if(length(d.axis)!=1){
@@ -2015,45 +2061,45 @@ plotReplication <- function(SEV.ori,SEV.rep, d.axis=c("stat","d","r"), studyname
     df.sev.comp$xend[mlt]   <- df.sev.comp$xend[mlt]+(-1.5*dst)
     df.sev.comp$xend[-mlt]  <- df.sev.comp$xend[-mlt]+(1.5*dst)
     df.sev.comp$dfrom       <- rev(test)
+    df.sev.comp$disc <- df.sev.comp$SEV.comp.x
   }  
   
   if(pl.crit){
     df.crit<- df.sevr[c(4,10), ]
     df.crit$dfrom <- test 
+    df.crit$disc<- df.crit[ ,1]
   }
   
   # Discrepance axis will be labelled according to d.axis
-  df$disc     <- df[ ,1]
   df.sev$disc <- df.sev[ ,1]
-  df.sev.comp$disc <- df.sev.comp$SEV.comp.x
-  df.crit$disc<- df.crit[ ,1]
+  df$disc     <- df[ ,1]
   d.label <- paste0("Discrepancy in units of ",list(ori.t$stat,"Cohen's d","Effect Size r")[[dID]])
   verdict <- ifelse(rep.t$H0,paste0("ReplicationInference: mu <= mu[1]"),paste0("ReplicationInference: mu > mu[1]"))
   
   repP <-  ggplot(df,aes(group=study)) + 
-    geom_line(data=df,aes(x=disc,y=y.SEV.obs,color=study),size=2) + 
-    geom_point(data=df.sev,aes(x=disc, y=SEV.y,shape=dfrom,fill=dfrom),alpha=.5,size=5)
+    geom_line(data=df,aes(x=disc,y=y.SEV.obs,color=study),size=3) + 
+    geom_point(data=df.sev,aes(x=disc, y=SEV.y,shape=dfrom,fill=dfrom),alpha=.5,size=7)
   
   if(pl.sevlabels){repP <- repP + 
                      annotate("text",  x = df.sev$xend+.05, y = df.sev$yend, label = labels, size=2, parse=T, colour=col)}
   #annotate("text",  x = c(xmin,(xmin+min(df[,1]))/2), y = c(1,1), label = c("Original","Replication"), cex=4,fontface=2)}
   #==",round(df.sev.comp$SEV.comp.y,digits=2)
   if(pl.sevlabels.comp){repP <- repP + 
-                          annotate("text",  x = df.sev.comp$xend, y = df.sev.comp$SEV.comp.y, label = paste0("SEV(mu>",round(df.sev.comp$SEV.comp.x,digits=2),")"),parse=T,cex=3) +
-                          geom_point(data=df.sev.comp,aes(x=disc, y=SEV.comp.y,shape=dfrom,fill=dfrom),alpha=.5,size=5) +
+                          annotate("text",  x = df.sev.comp$xend, y = df.sev.comp$SEV.comp.y, label = paste0("SEV(mu>",round(df.sev.comp$SEV.comp.x,digits=2),")"),parse=T,size=10) +
+                          geom_point(data=df.sev.comp,aes(x=disc, y=SEV.comp.y,shape=dfrom,fill=dfrom),alpha=.5,size=7) +
                           geom_segment(data=df.sev.comp[1:4, ],aes(x=SEV.x, y=SEV.y, xend=SEV.comp.x, yend=SEV.comp.y),color="grey80")}
   
   if(pl.power){repP <- repP + geom_line(data=df,aes(x=disc,y=y.POW.post,group=power,colour=study,linetype=power))}
   
   if(pl.connect){repP <- repP + geom_segment(data=df.sev[1:4,],aes(x=disc, y=SEV.y, xend=rev(disc), yend=rev(SEV.y)),color="blue",alpha=.5)}
   
-  if(pl.crit){repP <- repP + geom_point(data=df.crit,aes(x=disc, y=SEV.y,shape=dfrom),color="red",fill="red",alpha=.6,size=2)}
+  if(pl.crit){repP <- repP + geom_point(data=df.crit,aes(x=disc, y=SEV.y,shape=dfrom),color="red",fill="red",alpha=.6,size=3)}
   
-  if(pl.ci){repP <- repP + geom_point(data=df.crit,aes(x=disc, y=SEV.y,shape=dfrom),color="red",fill="red",alpha=.6,size=2)}
+  if(pl.ci){repP <- repP + geom_point(data=df.crit,aes(x=disc, y=SEV.y,shape=dfrom),color="red",fill="red",alpha=.6,size=3)}
   
   if(pl.labels){repP <- repP +
                   ggtitle(paste(studyname)) + 
-                  annotate("text",x=(max(df$disc)-xmin)/3,xmin=xmin,xmax=max(df$disc), y = 1.1, label = verdict, size=4,parse=T) +
+                  annotate("text",x=(max(df$disc)-xmin)/3,xmin=xmin,xmax=max(df$disc), y = 1.1, label = verdict, size=5,parse=T) +
                   ylab("POWER / SEVERITY") + 
                   xlab(paste0(d.label))}
   #seq(round(min(df$disc),digits=1),round(max(df$disc)
@@ -2065,7 +2111,7 @@ plotReplication <- function(SEV.ori,SEV.rep, d.axis=c("stat","d","r"), studyname
     scale_linetype_manual(values=c(2,2),guide=guide_legend("Post-hoc power")) +
     scale_size_manual(values=c(1,2),guide=F) +
     scale_fill_manual(values=c("grey","black"),guide=guide_legend(expression(paste("Evaluate ",d(x[0]),":",mu[1] == (mu[0] + gamma))))) +
-    theme_bw(base_size = 10, base_family = "")
+    theme_bw(base_size = 12, base_family = "")
   
   return(repP)
 }
